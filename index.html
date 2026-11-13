@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>バグ・スイーパー ～おもちゃ工房の迷宮（クロックワーク・タワー）～</title>
+  <link rel="stylesheet" href="css/style.css?v=3" />
+</head>
+<body>
+  <div id="app-root">
+    <!-- =====================================================
+         1. タイトル画面（動きのあるライブ時計塔ステージ）
+         ===================================================== -->
+    <section id="screen-title" class="screen is-active">
+      <canvas id="title-bg-canvas" class="title-bg-canvas" aria-hidden="true"></canvas>
+      <div class="title-card">
+        <div class="title-top-actions">
+          <div class="title-live-badge">⚙ CLOCKWORK TOWER</div>
+          <div class="title-action-btns">
+            <button type="button" class="pill-btn btn-audio-toggle">🔊 おと ON</button>
+            <button type="button" id="btn-title-zukan" class="pill-btn">📖 パーツ図鑑</button>
+          </div>
+        </div>
+
+        <div class="title-hero">
+          <div class="title-canvas-wrap">
+            <canvas id="title-robot-canvas" width="260" height="210"></canvas>
+          </div>
+          <div class="title-copy">
+            <div class="title-eyebrow">STEAM デバッグ＆プログラミング パズル</div>
+            <h1 class="game-logo">バグ・スイーパー</h1>
+            <p class="game-subtitle">～おもちゃ工房の迷宮（クロックワーク・タワー）～</p>
+            <p class="title-lead">
+              バグだらけのプログラムを<strong>観察してデバッグ＆組み立て</strong>！<br />
+              最初は1カ所、すすめば<strong>複数修正や自由プログラミング</strong>へ進化するぞ！
+            </p>
+            <div class="title-mode-pills">
+              <span class="mode-pill">W1〜W3：1てデバッグ</span>
+              <span class="mode-pill">W4〜W6：マルチ修正</span>
+              <span class="mode-pill">W7〜W10：自由ビルド</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-slots-section">
+          <div class="save-header-row">
+            <div class="save-label">あそぶ プレイヤー（セーブデータ）を えらんでね</div>
+            <button type="button" id="btn-add-player" class="mini-action-btn is-add">＋ プレイヤーをふやす</button>
+          </div>
+          <div id="save-slots-list" class="save-slots-list"></div>
+        </div>
+
+        <div class="title-cta-wrap">
+          <button type="button" id="btn-start-adventure" class="primary-cta-btn">
+            ⚙ ぼうけんを はじめる！（全100ステージ）
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         2. タワーマップ画面（W1〜W10 全100面）
+         ===================================================== -->
+    <section id="screen-tower" class="screen">
+      <header class="top-bar">
+        <div class="top-left">
+          <button type="button" id="btn-tower-back" class="nav-btn">◀ タイトル</button>
+          <div id="tower-summary" class="summary-chip"></div>
+        </div>
+        <div class="top-right">
+          <button type="button" id="btn-toggle-unlock-all" class="nav-btn">全ステージかいほう (OFF)</button>
+          <button type="button" id="btn-tower-zukan" class="nav-btn">📖 図鑑</button>
+          <button type="button" class="nav-btn btn-audio-toggle">🔊 おと ON</button>
+        </div>
+      </header>
+
+      <div class="tower-body">
+        <nav id="world-tabs" class="world-tabs" aria-label="階層選択"></nav>
+
+        <div id="world-banner" class="world-banner">
+          <h2 id="world-banner-title">第1層：つみきの玄関ホール</h2>
+          <p id="world-banner-sub">順次処理①（基本移動）</p>
+        </div>
+
+        <div id="stage-select-grid" class="stage-select-grid"></div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         3. ゲームプレイ画面（iPadランドスケープ2ペイン）
+         ===================================================== -->
+    <section id="screen-game" class="screen">
+      <header class="game-top-bar">
+        <div class="top-left">
+          <button type="button" id="btn-game-map" class="nav-btn">🏰 タワー</button>
+          <span id="game-stage-badge" class="stage-badge">W1-1</span>
+          <h2 id="game-stage-title" class="stage-title">はじめてのいっぽ</h2>
+          <span id="game-world-pill" class="world-pill"></span>
+        </div>
+        <div class="top-right">
+          <div id="gear-indicator" class="gear-indicator">⚙ 黄金ギア 未回収</div>
+          <div id="patch-indicator" class="patch-indicator">パネルを 1つだけ なおせるよ</div>
+          <button type="button" id="btn-game-zukan" class="nav-btn">📖</button>
+          <button type="button" class="nav-btn btn-audio-toggle">🔊 おと ON</button>
+        </div>
+      </header>
+
+      <div class="game-main-split">
+        <!-- 左ペイン：ステージCanvas＆ネジ丸セリフ -->
+        <div class="stage-pane">
+          <div id="nejimaru-speech" class="speech-bubble mood-info">
+            「▶ うごかす」をおして バグを かんさつしよう！
+          </div>
+          <div class="canvas-stage-wrap">
+            <canvas id="stage-canvas"></canvas>
+          </div>
+          <div class="legend-strip">
+            <span>🏁 ゴール</span>
+            <span>⚙ 黄金ギア(Sランク)</span>
+            <span>🍪 ヒビ壁(ドリル)</span>
+            <span>⬛ 穴(ジャンプ)</span>
+            <span>🧲 鉄ブロック</span>
+          </div>
+        </div>
+
+        <!-- 右ペイン：プログラムパネル＆実行コントロール -->
+        <div class="code-pane">
+          <div class="code-pane-header">
+            <span id="code-pane-title" class="code-title">ネジ丸の プログラム</span>
+            <div class="code-header-actions">
+              <button type="button" id="btn-scratch-toggle" class="undo-btn is-scratch">🧩 ゼロからつくる</button>
+              <button type="button" id="btn-undo-patch" class="undo-btn">↺ もとに もどす</button>
+            </div>
+          </div>
+
+          <div id="program-list" class="program-list"></div>
+
+          <div class="control-dock">
+            <button type="button" id="btn-play" class="ctrl-btn is-play">▶ うごかす</button>
+            <button type="button" id="btn-step" class="ctrl-btn is-step">⏭ 1こずつ</button>
+            <button type="button" id="btn-speed" class="ctrl-btn is-speed">▶ 1ばいそく</button>
+            <button type="button" id="btn-reset" class="ctrl-btn is-reset">⏹ リセット</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ロボットと実行中パネルを結ぶ光のトレースSVGオーバーレイ -->
+      <svg id="trace-beam-svg" class="trace-beam-svg"></svg>
+    </section>
+
+    <!-- =====================================================
+         モーダル1：命令パネル編集・自由ビルド
+         ===================================================== -->
+    <div id="edit-modal" class="modal-backdrop">
+      <div class="modal-card edit-modal-card">
+        <h3 id="edit-modal-title" class="modal-title">どの めいれいに なおす？</h3>
+        <div id="edit-candidates-grid" class="edit-candidates-grid"></div>
+        <div id="edit-build-tools" class="edit-build-tools" style="display:none;">
+          <div class="build-tools-label">🛠 ブロックの そうさ（自由ビルド）</div>
+          <div class="build-tools-row">
+            <button type="button" id="btn-node-move-up" class="nav-btn">▲ まえへ</button>
+            <button type="button" id="btn-node-move-down" class="nav-btn">▼ うしろへ</button>
+            <button type="button" id="btn-node-insert-after" class="nav-btn">＋ あとに追加</button>
+            <button type="button" id="btn-node-delete" class="nav-btn is-danger">🗑 消す</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-edit-cancel" class="nav-btn">やめる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         モーダル4：プレイヤー名入力（追加＆名前変更）
+         ===================================================== -->
+    <div id="player-name-modal" class="modal-backdrop">
+      <div class="modal-card compact-modal-card">
+        <h3 id="player-name-modal-title" class="modal-title">プレイヤーの なまえ</h3>
+        <div class="name-input-wrap">
+          <input type="text" id="player-name-input" class="player-name-input" maxlength="14" placeholder="なまえを いれてね（14もじまで）" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-player-name-cancel" class="nav-btn">やめる</button>
+          <button type="button" id="btn-player-name-save" class="primary-cta-btn small-cta">けってい！</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         モーダル5：セーブデータ削除確認
+         ===================================================== -->
+    <div id="delete-save-modal" class="modal-backdrop">
+      <div class="modal-card compact-modal-card">
+        <h3 class="modal-title">⚠ セーブデータを けしますか？</h3>
+        <p id="delete-save-desc" class="delete-save-desc"></p>
+        <div class="modal-actions">
+          <button type="button" id="btn-delete-save-cancel" class="nav-btn">やめる</button>
+          <button type="button" id="btn-delete-save-confirm" class="nav-btn is-danger">🗑 ほんとうに けす</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         モーダル2：ステージクリア＆進化パーツ3択
+         ===================================================== -->
+    <div id="clear-modal" class="modal-backdrop">
+      <div class="modal-card clear-modal-card">
+        <div id="clear-rank-badge" class="clear-rank-badge is-s">S ランク</div>
+        <h3 id="clear-modal-title" class="modal-title">神ハック大せいこう！！</h3>
+        <p id="clear-modal-desc" class="clear-desc"></p>
+
+        <div id="evolution-box" class="evolution-box">
+          <div class="evo-header">🔧 パーツ進化タイム！ 1つえらんで ネジ丸に合体させよう！</div>
+          <div id="evolution-cards" class="evolution-cards"></div>
+          <p id="evo-picked-msg" class="evo-picked-msg"></p>
+        </div>
+
+        <div class="modal-actions clear-actions">
+          <button type="button" id="btn-clear-retry" class="nav-btn">もういちど 別解をさがす</button>
+          <button type="button" id="btn-clear-map" class="nav-btn">タワーへ もどる</button>
+          <button type="button" id="btn-clear-next" class="primary-cta-btn small-cta">つぎの ステージへ ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         モーダル3：パーツ＆バグ図鑑
+         ===================================================== -->
+    <div id="zukan-modal" class="modal-backdrop">
+      <div class="modal-card zukan-modal-card">
+        <div class="zukan-header">
+          <h3>📖 ネジ丸の 進化パーツ＆バグ図鑑</h3>
+          <button type="button" id="btn-zukan-close" class="nav-btn">✕ とじる</button>
+        </div>
+        <div class="zukan-body">
+          <div class="zukan-preview-col">
+            <canvas id="zukan-robot-canvas" width="210" height="210"></canvas>
+            <div class="zukan-caption">いまの ネジ丸の すがた</div>
+          </div>
+          <div id="zukan-parts-list" class="zukan-parts-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- スクリプト読込（file:// ローカル直接実行・HTTP両方対応） -->
+  <script src="js/engine.js?v=3"></script>
+  <script src="js/audio.js?v=3"></script>
+  <script src="js/renderer.js?v=3"></script>
+  <script src="js/ui.js?v=3"></script>
+  <script src="js/qa/solver.js?v=3"></script>
+  <script src="js/stages/w1.js?v=3"></script>
+  <script src="js/stages/w2.js?v=3"></script>
+  <script src="js/stages/w3.js?v=3"></script>
+  <script src="js/stages/w4.js?v=3"></script>
+  <script src="js/stages/w5.js?v=3"></script>
+  <script src="js/stages/w6.js?v=3"></script>
+  <script src="js/stages/w7.js?v=3"></script>
+  <script src="js/stages/w8.js?v=3"></script>
+  <script src="js/stages/w9.js?v=3"></script>
+  <script src="js/stages/w10.js?v=3"></script>
+  <script src="js/main.js?v=3"></script>
+</body>
+</html>
